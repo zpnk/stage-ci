@@ -1,0 +1,15 @@
+{
+  "name": "stage-ci",
+  "version": "0.1.0",
+  "main": "server.js",
+  "license": "MIT",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "body-parser": "^1.15.2",
+    "download-package-tarball": "^1.0.5",
+    "express": "^4.14.0",
+    "octonode": "^0.7.6"
+  }
+}
