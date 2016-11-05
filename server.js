@@ -1,69 +1,42 @@
-const exec = require('child_process').exec
-const Github = require('octonode')
-const download = require('download-package-tarball')
-const bodyParser = require('body-parser')
-const server = require('express')()
+const path  = require('path');
+const bodyParser = require('body-parser');
+const server = require('express')();
+const git = require('simple-git')();
+const {stage} = require('./core');
 
-const github = Github.client(process.env.GITHUB_TOKEN)
+if (!process.env.GITHUB_TOKEN) {
+  throw new Error('GITHUB_TOKEN must be defined in environment');
+}
 
-server.use(bodyParser.json())
+const DEPLOY_DIR = path.resolve('.deploys');
 
-server.post('/', (req, res) => {
-  const {number, pull_request, repository: repo} = req.body
-  const {user: {login}, title, head} = pull_request
+server.use(bodyParser.json());
+server.post('/', (request, response) => {
+  const {action, number, pull_request, repository} = request.body;
 
-  let {action} = req.body
-  if (action === 'synchronize') action = 'bumped'
+  if (!['opened', 'synchronize'].includes(action)) return response.sendStatus(204);
 
-  console.log(`> PR #${number} "${title}" ${action} by @${login}`)
-  console.log(`> Deploying ${repo.full_name}/tree/${head.ref}#${head.sha}`)
+  const {user: {login}, title, head} = pull_request;
+  const localDirectory = path.join(DEPLOY_DIR, repository.full_name);
+  const alias = `https://${repository.name}-${head.ref}.now.sh`;
 
-  console.log('> Synching commit…')
+  console.log(`> PR #${number} "${title}" ${action} by @${login}`);
+  console.log(`> Deploying ${head.label}/${head.ref}#${head.sha}`);
+  console.log(`> Cloning ${repository.clone_url}...`);
 
-  github.repo(repo.full_name)
-  .archive('tarball', head.sha, (err, link) => {
-    if (err || !link) return res.sendStatus(500)
+  response.sendStatus(200);
 
-    download({url: link, dir: 'deploys'})
-    .then(() => {
-      console.log('> Synch complete')
-      console.log('> Initializing deploy…')
+  git.clone(repository.clone_url, localDirectory, [ // TODO: Silence the noise
+    '--depth=1',
+    `--branch=${head.ref}`
+  ], () => {
+    console.log('> Syncing commit...');
+    git.cwd(localDirectory)  // TODO: Avoid multiple request working on the same localDirectory
+      .fetch('origin', head.ref)
+      .checkout(head.sha)
+      .then(() => stage(localDirectory, {alias}));
+      // TODO: Create GitHub status
+  });
+});
 
-      const cwd = `deploys/${repo.name}`
-
-      const nowProc = exec(`now`, {cwd: cwd})
-
-      let host
-
-      nowProc.stdout.on('data', data => {
-        host = data.replace('https://','')
-        console.log('> Deploying to host', host)
-      })
-
-      nowProc.on('close', code => {
-        if (code === 1) {
-          console.log(`> Deploy failed`)
-          return false
-        }
-
-        console.log(`> Deploy complete`)
-        console.log(`> Aliasing host…`)
-        const finalHost = `${repo.name}-${head.ref}.now.sh`
-
-        const aliasCmd = `now alias set ${host} ${finalHost}`
-        const aliasProc = exec(aliasCmd, {cwd: cwd})
-
-        aliasProc.on('close', code => {
-          console.log(`> Ready! ${finalHost}`)
-          res.sendStatus(200)
-        })
-      })
-    })
-    .catch(err => {
-      console.log(err)
-      res.sendStatus(500)
-    })
-  })
-})
-
-server.listen(process.env.PORT || 3000)
+server.listen(process.env.PORT || 3000);
