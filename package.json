@@ -4,9 +4,10 @@
   "main": "server.js",
   "license": "MIT",
   "scripts": {
-    "start": "node server.js"
+    "start": "node --harmony-async-await server.js"
   },
   "dependencies": {
+    "axios": "^0.15.2",
     "body-parser": "^1.15.2",
     "express": "^4.14.0",
     "now": "^0.28.0",

@@ -1,42 +1,37 @@
 const path  = require('path');
 const bodyParser = require('body-parser');
 const server = require('express')();
-const git = require('simple-git')();
-const {stage} = require('./core');
-
-if (!process.env.GITHUB_TOKEN) {
-  throw new Error('GITHUB_TOKEN must be defined in environment');
-}
+const {stage, sync, createStatusSetter} = require('./core');
 
 const DEPLOY_DIR = path.resolve('.deploys');
 
 server.use(bodyParser.json());
-server.post('/', (request, response) => {
-  const {action, number, pull_request, repository} = request.body;
+server.post('/', async (request, response) => {
+  const {action, pull_request, repository} = request.body;
 
-  if (!['opened', 'synchronize'].includes(action)) return response.sendStatus(204);
+  if (!['opened', 'synchronize'].includes(action)) {
+    return response.sendStatus(204);
+  }
 
-  const {user: {login}, title, head} = pull_request;
+  const {ref, sha} = pull_request.head;
   const localDirectory = path.join(DEPLOY_DIR, repository.full_name);
-  const alias = `https://${repository.name}-${head.ref}.now.sh`;
-
-  console.log(`> PR #${number} "${title}" ${action} by @${login}`);
-  console.log(`> Deploying ${head.label}/${head.ref}#${head.sha}`);
-  console.log(`> Cloning ${repository.clone_url}...`);
+  const cloneUrl = repository.clone_url;
+  const alias = `https://${repository.name}-${ref}.now.sh`;
+  const setStatus = createStatusSetter(request.body);
 
   response.sendStatus(200);
+  console.log(`> Deploying ${cloneUrl}@${ref}#${sha} to ${alias}`);
 
-  git.clone(repository.clone_url, localDirectory, [ // TODO: Silence the noise
-    '--depth=1',
-    `--branch=${head.ref}`
-  ], () => {
-    console.log('> Syncing commit...');
-    git.cwd(localDirectory)  // TODO: Avoid multiple request working on the same localDirectory
-      .fetch('origin', head.ref)
-      .checkout(head.sha)
-      .then(() => stage(localDirectory, {alias}));
-      // TODO: Create GitHub status
-  });
+  try {
+    await setStatus('pending', `Staging at ${alias}`, alias);
+    await sync(cloneUrl, localDirectory, {ref, checkout: sha});
+    await stage(localDirectory, {alias});
+    await setStatus('success', `Staged at ${alias}`, alias);
+  } catch (error) {
+    await setStatus('error', `Could not stage ${alias}`, alias);
+  }
+
+  console.log('> Done!');
 });
 
 server.listen(process.env.PORT || 3000);
