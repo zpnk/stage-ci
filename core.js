@@ -1,4 +1,5 @@
 const {exec} = require('child_process');
+const {fs} = require('mz');
 const path = require('path');
 const url = require('url');
 const git = require('simple-git/promise')();
@@ -42,9 +43,13 @@ function stage(cwd, {alias}) {
 }
 
 async function sync(cloneUrl, localDirectory, {ref, checkout}) {
-  // TODO: Avoid multiple request working on the same localDirectory
-  // TODO: Silence the noise
-  await git.clone(cloneUrl, localDirectory, ['--depth=1',`--branch=${ref}`]);
+  try {
+    await fs.stat(localDirectory);
+  } catch (error) {
+    log.info('> Cloning repository...');
+    await git.clone(cloneUrl, localDirectory, ['--depth=1',`--branch=${ref}`]);
+  }
+
   await git.cwd(localDirectory);
   log.info(`> Fetching origin#${ref}...`);
   await git.fetch('origin', ref);
