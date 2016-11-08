@@ -8,8 +8,11 @@ if (!process.env.GITHUB_TOKEN) {
   throw new Error('GITHUB_TOKEN must be defined in environment');
 }
 
-const NOW = path.resolve('./node_modules/now/build/bin/now');
+if (!process.env.NOW_TOKEN) {
+  throw new Error('NOW_TOKEN must be defined in environment');
+}
 
+const NOW = `${path.resolve('./node_modules/now/build/bin/now')} --token ${process.env.NOW_TOKEN}`;
 const githubApi = axios.create({
   headers: {
     'Authorization': `token ${process.env.GITHUB_TOKEN}`
@@ -17,12 +20,14 @@ const githubApi = axios.create({
 });
 
 function stage(cwd, {alias}) {
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     const nowProc = exec(NOW, {cwd});
+    nowProc.stderr.on('data', (error) => reject(new Error(error)));
     nowProc.stdout.on('data', (url) => {
       if (!url) return;
       console.log(`> Aliasing ${url}`);
       const aliasProc = exec(`${NOW} alias set ${url} ${alias}`, {cwd});
+      aliasProc.on('data', (error) => reject(new Error(error)));
       aliasProc.on('close', (code) => {
         console.log(`> Alias ready ${alias}`);
         resolve(alias);

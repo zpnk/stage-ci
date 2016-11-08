@@ -21,6 +21,7 @@ server.post('/', async (request, response) => {
     await stage(localDirectory, {alias});
     await setStatus('success', `Staged at ${alias}`, alias);
   } catch (error) {
+    console.error(error.stack);
     await setStatus('error', `Could not stage ${alias}`, alias);
   }
 
