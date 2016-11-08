@@ -3,6 +3,7 @@ const path = require('path');
 const url = require('url');
 const git = require('simple-git')();
 const axios = require('axios');
+const log = require('./logger');
 
 if (!process.env.GITHUB_TOKEN) {
   throw new Error('GITHUB_TOKEN must be defined in environment');
@@ -30,10 +31,11 @@ function stage(cwd, {alias}) {
     nowProc.stdout.on('data', (url) => {
       if (!url) return;
       console.log(`> Aliasing ${url}`);
+      log.info(`> Aliasing ${url}`);
       const aliasProc = exec(now(`alias set ${url} ${alias}`), {cwd});
       aliasProc.on('data', (error) => reject(new Error(error)));
       aliasProc.on('close', (code) => {
-        console.log(`> Alias ready ${alias}`);
+        log.info(`> Alias ready ${alias}`);
         resolve(alias);
       });
     });
@@ -47,7 +49,7 @@ function sync(cloneUrl, localDirectory, {ref, checkout}) {
       '--depth=1',
       `--branch=${ref}`
     ], () => {
-      console.log(`> Checking out ${ref}#${checkout}...`);
+      log.info(`> Checking out ${ref}#${checkout}...`);
       git.cwd(localDirectory)
         .fetch('origin', ref)
         .checkout(checkout)
@@ -73,7 +75,7 @@ function github(data) {
       {auth: process.env.GITHUB_TOKEN}
     )),
     setStatus: (state, description, targetUrl) => {
-      console.log(`> Setting GitHub status to "${state}"...`);
+      log.info(`> Setting GitHub status to "${state}"...`);
       return githubApi.post(pull_request.statuses_url, {
         state: state,
         target_url: targetUrl,

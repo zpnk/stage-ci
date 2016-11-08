@@ -3,6 +3,7 @@ const bodyParser = require('body-parser');
 const server = require('express')();
 const {version} = require('./package.json');
 const {stage, sync, github} = require('./core');
+const log = require('./logger');
 
 const DEPLOY_DIR = path.resolve('/tmp/.stage-ci');
 
@@ -18,7 +19,7 @@ server.post('/', async (request, response) => {
   response.sendStatus((success) ? 200 : 204);
   if (!success) return;
 
-  console.log(`> Deploying ${name}@${ref}#${sha} to ${alias}`);
+  log.info(`> Deploying ${name}@${ref}#${sha} to ${alias}`);
   const localDirectory = path.join(DEPLOY_DIR, name);
 
   try {
@@ -27,11 +28,14 @@ server.post('/', async (request, response) => {
     await stage(localDirectory, {alias});
     await setStatus('success', `Staged at ${alias}`, alias);
   } catch (error) {
-    console.error(error.stack);
+    log.error(error.stack);
     await setStatus('error', `Could not stage ${alias}`, alias);
   }
 
-  console.log('> Done!');
+  log.info('> Done!');
 });
 
-server.listen(process.env.PORT || 3000);
+const port = process.env.PORT || 3000;
+server.listen(port, () => {
+  log.info(`Sever listening on ${port}... `);
+});
