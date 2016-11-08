@@ -41,19 +41,15 @@ function stage(cwd, {alias}) {
   });
 }
 
-function sync(cloneUrl, localDirectory, {ref, checkout}) {
+async function sync(cloneUrl, localDirectory, {ref, checkout}) {
   // TODO: Avoid multiple request working on the same localDirectory
   // TODO: Silence the noise
-  return git.clone(cloneUrl, localDirectory, ['--depth=1',`--branch=${ref}`])
-  .then(() => git.cwd(localDirectory))
-  .then(() => {
-    log.info(`> Fetching origin#${ref}...`);
-    return git.fetch('origin', ref);
-  })
-  .then(() => {
-    log.info(`> Checking out ${ref}#${checkout}...`);
-    return git.checkout(checkout);
-  });
+  await git.clone(cloneUrl, localDirectory, ['--depth=1',`--branch=${ref}`]);
+  await git.cwd(localDirectory);
+  log.info(`> Fetching origin#${ref}...`);
+  await git.fetch('origin', ref);
+  log.info(`> Checking out ${ref}#${checkout}...`);
+  await git.checkout(checkout);
 }
 
 function github(data) {
