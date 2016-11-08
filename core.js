@@ -1,7 +1,7 @@
 const {exec} = require('child_process');
 const path = require('path');
 const url = require('url');
-const git = require('simple-git')();
+const git = require('simple-git/promise')();
 const axios = require('axios');
 const log = require('./logger');
 
@@ -44,17 +44,16 @@ function stage(cwd, {alias}) {
 
 function sync(cloneUrl, localDirectory, {ref, checkout}) {
   // TODO: Avoid multiple request working on the same localDirectory
-  return new Promise((resolve) => {
-    git.clone(cloneUrl, localDirectory, [ // TODO: Silence the noise
-      '--depth=1',
-      `--branch=${ref}`
-    ], () => {
-      log.info(`> Checking out ${ref}#${checkout}...`);
-      git.cwd(localDirectory)
-        .fetch('origin', ref)
-        .checkout(checkout)
-        .then(resolve);
-    });
+  // TODO: Silence the noise
+  return git.clone(cloneUrl, localDirectory, ['--depth=1',`--branch=${ref}`])
+  .then(() => git.cwd(localDirectory))
+  .then(() => {
+    log.info(`> Fetching origin#${ref}...`);
+    return git.fetch('origin', ref);
+  })
+  .then(() => {
+    log.info(`> Checking out ${ref}#${checkout}...`);
+    return git.checkout(checkout);
   });
 }
 
