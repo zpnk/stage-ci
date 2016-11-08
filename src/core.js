@@ -51,9 +51,9 @@ async function sync(cloneUrl, localDirectory, {ref, checkout}) {
   }
 
   await git.cwd(localDirectory);
-  log.info(`> Fetching origin#${ref}...`);
+  log.info(`> Fetching ${ref}...`);
   await git.fetch('origin', ref);
-  log.info(`> Checking out ${ref}#${checkout}...`);
+  log.info(`> Checking out ${ref}@${checkout}...`);
   await git.checkout(checkout);
 }
 

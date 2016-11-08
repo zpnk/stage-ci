@@ -4,7 +4,7 @@
   "main": "server.js",
   "license": "MIT",
   "scripts": {
-    "start": "node --harmony-async-await server.js"
+    "start": "node --harmony-async-await ./src/server.js"
   },
   "dependencies": {
     "axios": "^0.15.2",
