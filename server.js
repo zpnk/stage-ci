@@ -1,11 +1,17 @@
 const path  = require('path');
 const bodyParser = require('body-parser');
 const server = require('express')();
+const {version} = require('./package.json');
 const {stage, sync, github} = require('./core');
 
 const DEPLOY_DIR = path.resolve('/tmp/.stage-ci');
 
 server.use(bodyParser.json());
+
+server.get('/', (request, response) => {
+  response.json({version});
+});
+
 server.post('/', async (request, response) => {
   const {success, ref, sha, name, alias, cloneUrl, setStatus} = github(request.body);
 
