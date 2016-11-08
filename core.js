@@ -35,7 +35,6 @@ function stage(cwd, {alias}) {
       aliasProc.on('data', (error) => reject(new Error(error)));
       aliasProc.on('close', (code) => {
         log.info(`> Alias ready ${alias}`);
-        rmdir(cwd);
         resolve(alias);
       });
     });
@@ -83,16 +82,6 @@ function github(data) {
       });
     }
   };
-}
-
-function rmdir(dir) {
-  return new Promise((resolve) => {
-    const rmProc = exec(`rm -r ${dir}`);
-
-    rmProc.on('close', (code) => {
-      resolve();
-    });
-  });
 }
 
 module.exports = {
