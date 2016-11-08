@@ -1,26 +1,19 @@
 const path  = require('path');
 const bodyParser = require('body-parser');
 const server = require('express')();
-const {stage, sync, createStatusSetter} = require('./core');
+const {stage, sync, github} = require('./core');
 
-const DEPLOY_DIR = path.resolve('.deploys');
+const DEPLOY_DIR = path.resolve('/tmp/.stage-ci');
 
 server.use(bodyParser.json());
 server.post('/', async (request, response) => {
-  const {action, pull_request, repository} = request.body;
+  const {success, ref, sha, name, alias, cloneUrl, setStatus} = github(request.body);
 
-  if (!['opened', 'synchronize'].includes(action)) {
-    return response.sendStatus(204);
-  }
+  response.sendStatus((success) ? 200 : 204);
+  if (!success) return;
 
-  const {ref, sha} = pull_request.head;
-  const localDirectory = path.join(DEPLOY_DIR, repository.full_name);
-  const cloneUrl = repository.clone_url;
-  const alias = `https://${repository.name}-${ref}.now.sh`;
-  const setStatus = createStatusSetter(request.body);
-
-  response.sendStatus(200);
-  console.log(`> Deploying ${cloneUrl}@${ref}#${sha} to ${alias}`);
+  console.log(`> Deploying ${name}@${ref}#${sha} to ${alias}`);
+  const localDirectory = path.join(DEPLOY_DIR, name);
 
   try {
     await setStatus('pending', `Staging at ${alias}`, alias);

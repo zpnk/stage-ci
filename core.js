@@ -1,5 +1,6 @@
 const {exec} = require('child_process');
 const path = require('path');
+const url = require('url');
 const git = require('simple-git')();
 const axios = require('axios');
 
@@ -7,7 +8,6 @@ if (!process.env.GITHUB_TOKEN) {
   throw new Error('GITHUB_TOKEN must be defined in environment');
 }
 
-const STATUS_CONTEXT = 'ci/stage-ci';
 const NOW = path.resolve('./node_modules/now/build/bin/now');
 
 const githubApi = axios.create({
@@ -34,7 +34,6 @@ function stage(cwd, {alias}) {
 function sync(cloneUrl, localDirectory, {ref, checkout}) {
   // TODO: Avoid multiple request working on the same localDirectory
   return new Promise((resolve) => {
-    console.log(`> Cloning ${cloneUrl}#${ref}...`);
     git.clone(cloneUrl, localDirectory, [ // TODO: Silence the noise
       '--depth=1',
       `--branch=${ref}`
@@ -48,26 +47,36 @@ function sync(cloneUrl, localDirectory, {ref, checkout}) {
   });
 }
 
-function createStatusSetter(data) {
-  if (data.pull_request.statuses_url) {
-    return function githubStatusSetter(state, description, targetUrl) {
+function github(data) {
+  if (!['opened', 'synchronize'].includes(data.action)) return {success: false};
+
+  const {repository, pull_request} = data;
+  const {ref, sha} = pull_request.head;
+
+  return {
+    ref,
+    sha,
+    success: true,
+    name: repository.full_name,
+    alias: `https://${repository.name}-${ref}.now.sh`,
+    cloneUrl: url.format(Object.assign(
+      url.parse(repository.clone_url),
+      {auth: process.env.GITHUB_TOKEN}
+    )),
+    setStatus: (state, description, targetUrl) => {
       console.log(`> Setting GitHub status to "${state}"...`);
-      return githubApi.post(data.pull_request.statuses_url, {
+      return githubApi.post(pull_request.statuses_url, {
         state: state,
         target_url: targetUrl,
         description: description,
-        context: STATUS_CONTEXT
+        context: 'ci/stage-ci'
       });
     }
-  }
-
-  return function noopStatusSetter() {
-    console.log(`> Skipped status update`);
-  }
+  };
 }
 
 module.exports = {
   stage,
   sync,
-  createStatusSetter
+  github
 };
