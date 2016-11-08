@@ -30,7 +30,6 @@ function stage(cwd, {alias}) {
     nowProc.stderr.on('data', (error) => reject(new Error(error)));
     nowProc.stdout.on('data', (url) => {
       if (!url) return;
-      console.log(`> Aliasing ${url}`);
       log.info(`> Aliasing ${url}`);
       const aliasProc = exec(now(`alias set ${url} ${alias}`), {cwd});
       aliasProc.on('data', (error) => reject(new Error(error)));
