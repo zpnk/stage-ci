@@ -3,12 +3,7 @@ module.exports = () => {
 
   if (!ENVS) return '';
 
-  let envs;
-  try {
-    envs = JSON.parse(ENVS);
-  } catch (error) {
-    return '';
-  }
+  const envs = JSON.parse(ENVS);
 
   const flags = Object.keys(envs)
   .map((key) => {

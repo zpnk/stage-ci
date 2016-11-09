@@ -8,7 +8,8 @@ test('empty', (t) => {
 
 test('bad json', (t) => {
   process.env.ENVS = '{"REDIS_HOST": my.cache.aws.com // hmm}';
-  t.is(envs(), '');
+  const error = t.throws(envs);
+  t.is(error.name, 'SyntaxError');
 });
 
 test('basic envar key validation', (t) => {
