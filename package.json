@@ -4,7 +4,8 @@
   "main": "server.js",
   "license": "MIT",
   "scripts": {
-    "start": "node --harmony-async-await ./src/server.js"
+    "start": "node --harmony-async-await ./src/server.js",
+    "test": "ava"
   },
   "dependencies": {
     "axios": "^0.15.2",
@@ -16,5 +17,8 @@
     "url": "^0.11.0",
     "winston": "^2.3.0",
     "winston-papertrail": "^1.0.3"
+  },
+  "devDependencies": {
+    "ava": "^0.16.0"
   }
 }
