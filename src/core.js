@@ -4,7 +4,8 @@ const path = require('path');
 const url = require('url');
 const git = require('simple-git/promise')();
 const axios = require('axios');
-const log = require('./logger');
+const log = require('./logger')
+const envs = require('./envs');
 
 if (!process.env.GITHUB_TOKEN) {
   throw new Error('GITHUB_TOKEN must be defined in environment');
@@ -27,7 +28,7 @@ const githubApi = axios.create({
 
 function stage(cwd, {alias}) {
   return new Promise((resolve, reject) => {
-    const nowProc = exec(now(), {cwd});
+    const nowProc = exec(now(envs()), {cwd});
     nowProc.stderr.on('data', (error) => reject(new Error(error)));
     nowProc.stdout.on('data', (url) => {
       if (!url) return;

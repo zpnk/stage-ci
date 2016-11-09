@@ -37,5 +37,5 @@ server.post('/', async (request, response) => {
 });
 
 server.listen(PORT, () => {
-  log.info(`Sever listening on ${PORT}... `);
+  log.info(`Server listening on ${PORT}... `);
 });
