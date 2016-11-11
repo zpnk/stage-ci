@@ -2694,6 +2694,10 @@ progress@1.1.8:
   version "1.1.8"
   resolved "https://registry.yarnpkg.com/progress/-/progress-1.1.8.tgz#e260c78f6161cdd9b0e56cc3e0a85de17c7a57be"
 
+promise-queue:
+  version "2.2.3"
+  resolved "https://registry.yarnpkg.com/promise-queue/-/promise-queue-2.2.3.tgz#8534d76bf4673c3baa3a82bba01bd295cc30f14f"
+
 proxy-addr@~1.1.2:
   version "1.1.2"
   resolved "https://registry.yarnpkg.com/proxy-addr/-/proxy-addr-1.1.2.tgz#b4cc5f22610d9535824c123aef9d3cf73c40ba37"
