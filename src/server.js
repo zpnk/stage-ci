@@ -17,12 +17,12 @@ server.get('/', (request, response) => {
 });
 
 server.post('/', (request, response) => {
+  const {success, ref, sha, name, alias, cloneUrl, setStatus} = github(request.body);
+
+  response.sendStatus((success) ? 200 : 204);
+  if (!success) return;
+
   queue.add(async () => {
-    const {success, ref, sha, name, alias, cloneUrl, setStatus} = github(request.body);
-
-    response.sendStatus((success) ? 200 : 204);
-    if (!success) return;
-
     log.info(`> Deploying ${name}@${ref}#${sha} to ${alias}`);
     const localDirectory = path.join(DEPLOY_DIR, name);
 
