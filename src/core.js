@@ -37,8 +37,10 @@ function stage(cwd, {alias}) {
       aliasProc.on('data', (error) => reject(new Error(error)));
       aliasProc.on('close', (code) => {
         log.info(`> Alias ready ${alias}`);
-        resolve(alias);
       });
+    });
+    nowProc.stdout.on('close', () => {
+      resolve(alias);
     });
   });
 }
