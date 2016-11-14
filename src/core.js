@@ -28,19 +28,20 @@ const githubApi = axios.create({
 
 function stage(cwd, {alias}) {
   return new Promise((resolve, reject) => {
+    let url, aliasError;
     const nowProc = exec(now(envs()), {cwd});
     nowProc.stderr.on('data', (error) => reject(new Error(error)));
-    nowProc.stdout.on('data', (url) => {
-      if (!url) return;
-      log.info(`> Aliasing ${url}`);
-      const aliasProc = exec(now(`alias set ${url} ${alias}`), {cwd});
-      aliasProc.on('data', (error) => reject(new Error(error)));
-      aliasProc.on('close', (code) => {
-        log.info(`> Alias ready ${alias}`);
-      });
-    });
+    nowProc.stdout.on('data', (data) => {if (!url) url = data});
     nowProc.stdout.on('close', () => {
-      resolve(alias);
+      if (!url) return reject(new Error('Deployment failed'));
+      log.info(`> Setting ${url} to alias ${alias}`);
+      const aliasProc = exec(now(`alias set ${url} ${alias}`), {cwd});
+      aliasProc.stderr.on('data', (error) => {aliasError = error});
+      aliasProc.on('close', () => {
+        if (aliasError) return reject(new Error(aliasError));
+        log.info(`> Alias ready ${alias}`);
+        resolve(alias);
+      });
     });
   });
 }
