@@ -27,13 +27,13 @@ server.post('/', (request, response) => {
     const localDirectory = path.join(DEPLOY_DIR, name);
 
     try {
-      await setStatus('pending', `Staging at ${alias}`, alias);
+      await setStatus('pending', 'Staging...');
       await sync(cloneUrl, localDirectory, {ref, checkout: sha});
       await stage(localDirectory, {alias});
-      await setStatus('success', `Staged at ${alias}`, alias);
+      await setStatus('success', alias, alias);
     } catch (error) {
       log.error(error.stack);
-      await setStatus('error', `Could not stage ${alias}`, alias);
+      await setStatus('error', 'Error', alias);
     }
 
     log.info('> Done!');
