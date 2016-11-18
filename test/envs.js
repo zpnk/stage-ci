@@ -1,5 +1,5 @@
 import test from 'ava';
-import envs from '../src/envs'
+import envs from '../src/envs';
 
 test('empty', (t) => {
   delete process.env.ENVS;

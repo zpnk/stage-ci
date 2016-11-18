@@ -5,7 +5,7 @@
   "license": "MIT",
   "scripts": {
     "start": "node --harmony-async-await ./src/server.js",
-    "test": "ava"
+    "test": "xo && ava"
   },
   "dependencies": {
     "axios": "^0.15.2",
@@ -20,6 +20,58 @@
     "winston-papertrail": "^1.0.3"
   },
   "devDependencies": {
-    "ava": "^0.16.0"
+    "ava": "^0.16.0",
+    "eslint-config-xo-react": "^0.10.0",
+    "eslint-plugin-react": "^6.7.1",
+    "xo": "^0.17.1"
+  },
+  "xo": {
+    "extends": "xo-react",
+    "esnext": true,
+    "space": true,
+    "rules": {
+      "no-warning-comments": "warn",
+      "space-infix-ops": 0,
+      "one-var": ["error", {
+        "uninitialized": "always",
+        "initialized": "never"
+      }],
+      "max-statements-per-line": ["error", {
+        "max": 2
+      }],
+      "brace-style": ["error", "1tbs", {
+        "allowSingleLine": true
+      }],
+      "curly": [
+        "error",
+        "multi",
+        "consistent"
+      ],
+      "quote-props": [
+        "error",
+        "consistent"
+      ],
+      "arrow-parens": [
+        "error",
+        "always"
+      ],
+      "unicorn/catch-error-name": ["error", {
+        "name": "error"
+      }],
+      "unicorn/filename-case": 0,
+      "react/jsx-first-prop-new-line": 0,
+      "react/jsx-closing-bracket-location": 0,
+      "react/jsx-space-before-closing": [
+        "error",
+        "always"
+      ],
+      "react/jsx-no-bind": [
+        "error",
+        {
+          "ignoreRefs": true,
+          "allowArrowFunctions": true
+        }
+      ]
+    }
   }
 }

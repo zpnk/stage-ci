@@ -4,13 +4,11 @@ module.exports = () => {
   if (!ENVS) return '';
 
   const envs = JSON.parse(ENVS);
-
   const flags = Object.keys(envs)
-  .map((key) => {
-    if (/[^A-z0-9_]/i.test(key)) return;
-
-    return `-e ${key}="${envs[key]}"`;
-  }).join(' ').trim();
+    .filter((key) => !/[^A-Z0-9_]/i.test(key))
+    .map((key) => `-e ${key}=${envs[key]}`)
+    .join(' ')
+    .trim();
 
   return flags;
 };

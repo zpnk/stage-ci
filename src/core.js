@@ -1,19 +1,15 @@
+/* eslint-disable camelcase */
 const {exec} = require('child_process');
-const {fs} = require('mz');
 const path = require('path');
 const url = require('url');
+const {fs} = require('mz');
 const git = require('simple-git/promise')();
 const axios = require('axios');
-const log = require('./logger')
+const log = require('./logger');
 const envs = require('./envs');
 
-if (!process.env.GITHUB_TOKEN) {
-  throw new Error('GITHUB_TOKEN must be defined in environment');
-}
-
-if (!process.env.NOW_TOKEN) {
-  throw new Error('NOW_TOKEN must be defined in environment');
-}
+if (!process.env.GITHUB_TOKEN) throw new Error('GITHUB_TOKEN must be defined in environment');
+if (!process.env.NOW_TOKEN) throw new Error('NOW_TOKEN must be defined in environment');
 
 const now = (cmd='') => {
   const nowBin = path.resolve('./node_modules/now/build/bin/now');
@@ -31,12 +27,12 @@ function stage(cwd, {alias}) {
     let url, aliasError;
     const nowProc = exec(now(envs()), {cwd});
     nowProc.stderr.on('data', (error) => reject(new Error(error)));
-    nowProc.stdout.on('data', (data) => {if (!url) url = data});
+    nowProc.stdout.on('data', (data) => {if (!url) url = data;});
     nowProc.stdout.on('close', () => {
       if (!url) return reject(new Error('Deployment failed'));
       log.info(`> Setting ${url} to alias ${alias}`);
       const aliasProc = exec(now(`alias set ${url} ${alias}`), {cwd});
-      aliasProc.stderr.on('data', (error) => {aliasError = error});
+      aliasProc.stderr.on('data', (error) => {aliasError = error;});
       aliasProc.on('close', () => {
         if (aliasError) return reject(new Error(aliasError));
         log.info(`> Alias ready ${alias}`);
@@ -51,7 +47,7 @@ async function sync(cloneUrl, localDirectory, {ref, checkout}) {
     await fs.stat(localDirectory);
   } catch (error) {
     log.info('> Cloning repository...');
-    await git.clone(cloneUrl, localDirectory, ['--depth=1',`--branch=${ref}`]);
+    await git.clone(cloneUrl, localDirectory, ['--depth=1', `--branch=${ref}`]);
   }
 
   await git.cwd(localDirectory);
@@ -80,9 +76,9 @@ function github(data) {
     setStatus: (state, description, targetUrl) => {
       log.info(`> Setting GitHub status to "${state}"...`);
       return githubApi.post(pull_request.statuses_url, {
-        state: state,
+        state,
+        description,
         target_url: targetUrl,
-        description: description,
         context: 'ci/stage-ci'
       });
     }
