@@ -1,4 +1,6 @@
+/* eslint-disable no-unused-expressions */
 const winston = require('winston');
+
 const {PAPERTRAIL_HOST, PAPERTRAIL_PORT} = process.env;
 
 if (PAPERTRAIL_HOST && PAPERTRAIL_PORT) {
