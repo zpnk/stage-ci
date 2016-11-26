@@ -9,11 +9,11 @@ const log = require('./logger');
 const envs = require('./envs');
 
 if (!process.env.GITHUB_TOKEN) throw new Error('GITHUB_TOKEN must be defined in environment');
-if (!process.env.NOW_TOKEN) throw new Error('NOW_TOKEN must be defined in environment');
+if (!process.env.ZEIT_API_TOKEN) throw new Error('ZEIT_API_TOKEN must be defined in environment');
 
 const now = (cmd='') => {
   const nowBin = path.resolve('./node_modules/now/build/bin/now');
-  return `${nowBin} ${cmd} --token ${process.env.NOW_TOKEN}`;
+  return `${nowBin} ${cmd} --token ${process.env.ZEIT_API_TOKEN}`;
 };
 
 const githubApi = axios.create({

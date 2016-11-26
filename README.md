@@ -21,7 +21,7 @@ Generate a [Zeit API token](https://zeit.co/account#api-tokens) and set it in an
 environment variable:
 
 ```bash
-$ export NOW_TOKEN=123
+$ export ZEIT_API_TOKEN=123
 ```
 
 To enable [Papertrail](https://papertrailapp.com/) logging, set the respective
