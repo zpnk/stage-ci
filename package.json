@@ -5,7 +5,8 @@
   "license": "MIT",
   "scripts": {
     "start": "node --harmony-async-await ./src/server.js",
-    "test": "xo && ava"
+    "test": "xo && ava",
+    "precommit": "npm test -s"
   },
   "dependencies": {
     "axios": "^0.15.2",
@@ -23,6 +24,7 @@
     "ava": "^0.16.0",
     "eslint-config-xo-react": "^0.10.0",
     "eslint-plugin-react": "^6.7.1",
+    "husky": "^0.11.9",
     "xo": "^0.17.1"
   },
   "xo": {
@@ -32,16 +34,26 @@
     "rules": {
       "no-warning-comments": "warn",
       "space-infix-ops": 0,
-      "one-var": ["error", {
-        "uninitialized": "always",
-        "initialized": "never"
-      }],
-      "max-statements-per-line": ["error", {
-        "max": 2
-      }],
-      "brace-style": ["error", "1tbs", {
-        "allowSingleLine": true
-      }],
+      "one-var": [
+        "error",
+        {
+          "uninitialized": "always",
+          "initialized": "never"
+        }
+      ],
+      "max-statements-per-line": [
+        "error",
+        {
+          "max": 2
+        }
+      ],
+      "brace-style": [
+        "error",
+        "1tbs",
+        {
+          "allowSingleLine": true
+        }
+      ],
       "curly": [
         "error",
         "multi",
@@ -55,9 +67,12 @@
         "error",
         "always"
       ],
-      "unicorn/catch-error-name": ["error", {
-        "name": "error"
-      }],
+      "unicorn/catch-error-name": [
+        "error",
+        {
+          "name": "error"
+        }
+      ],
       "unicorn/filename-case": 0,
       "react/jsx-first-prop-new-line": 0,
       "react/jsx-closing-bracket-location": 0,
