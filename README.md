@@ -59,3 +59,7 @@ Open a PR on your repo to trigger the webhook. It will also fire on commits
 pushed to the PR's branch.
 
 Dev away! :)
+
+## License
+
+stage-ci is licensed under the [MIT License](./LICENSE).
