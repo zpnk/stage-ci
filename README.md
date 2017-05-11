@@ -2,6 +2,10 @@
 
 Realtime staging environments.
 
+## Prerequisites
+
+Node 6.6.0 and greater (security requirement for crypto.timingSafeEqual)
+
 ## Development
 
 Install project dependencies:
@@ -53,7 +57,15 @@ $ ngrok http 3000
 ```
 
 Setup a [test repo](https://github.com/zpnk/hello-world) on GitHub and configure
-a webhook using the ngrok url. Give it access to the "Pull request" event.
+a webhook using the ngrok url. Give it access to the "Pull request" event. You
+also must set a secret. Use this value as your GITHUB_WEBHOOK_SECRET. It should
+be long and you should not share it with anyone.
+
+Now use the same value to set your secret environment variable:
+
+```bash
+$ export GITHUB_WEBHOOK_SECRET=REPLACEME_REPLACEME_REPLACEME_REPLACEME_REPLACEME_REPLACEME_REPLACEME
+```
 
 Open a PR on your repo to trigger the webhook. It will also fire on commits
 pushed to the PR's branch.
