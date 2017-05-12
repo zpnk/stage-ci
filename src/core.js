@@ -2,14 +2,16 @@
 const {exec} = require('child_process');
 const path = require('path');
 const url = require('url');
+const crypto = require('crypto');
 const {fs} = require('mz');
 const git = require('simple-git/promise')();
 const axios = require('axios');
 const log = require('./logger');
 const envs = require('./envs');
 
-if (!process.env.GITHUB_TOKEN) throw new Error('GITHUB_TOKEN must be defined in environment');
-if (!process.env.ZEIT_API_TOKEN) throw new Error('ZEIT_API_TOKEN must be defined in environment');
+if (!process.env.GITHUB_TOKEN) throw new Error('GITHUB_TOKEN must be defined in environment. Create one at https://github.com/settings/tokens');
+if (!process.env.GITHUB_WEBHOOK_SECRET) throw new Error('GITHUB_WEBHOOK_SECRET must be defined in environment. Create one at https://github.com/{OWNERNAME}/{REPONAME}/settings/hooks (swap in the path to your repo)');
+if (!process.env.ZEIT_API_TOKEN) throw new Error('ZEIT_API_TOKEN must be defined in environment. Create one at https://zeit.co/account/tokens');
 
 const now = (cmd='') => {
   const nowBin = path.resolve('./node_modules/now/build/bin/now');
@@ -57,10 +59,33 @@ async function sync(cloneUrl, localDirectory, {ref, checkout}) {
   await git.checkout(checkout);
 }
 
-function github(data) {
-  if (!['opened', 'synchronize'].includes(data.action)) return {success: false};
+function UnsafeWebhookPayloadError(language) {
+  const asJson = {
+    error: {
+      type: 'fatal',
+      name: 'UNSAFE_WEBHOOK_PAYLOAD',
+      message: `We could not cryptograhpically verify the payload sent to the stage-ci webhook from ${language.provider.name}. Make sure your ${language.provider.name} environment variable matches the Secret field in your ${language.provider.name} webhook config ${language.provider.webhookLocationInstructions}.`
+    }
+  };
+  this.message = asJson.error.message;
+  this.name = asJson.error.name;
+  this.asJson = asJson;
+}
 
-  const {repository, pull_request} = data;
+function github({headers, body}) {
+  // Don't log but give a very specific error. We don't want to fill the logs.
+  if (!isGithubRequestCrypographicallySafe({headers, body, secret: process.env.GITHUB_WEBHOOK_SECRET}))
+    throw new UnsafeWebhookPayloadError({
+      provider: {
+        name: 'Github',
+        environmentVariable: 'GITHUB_WEBHOOK_SECRET',
+        webhookLocationInstructions: 'at https://github.com/{OWNERNAME}/{REPONAME}/settings/hooks (swap in the path to your repo)'
+      }
+    });
+
+  if (!['opened', 'synchronize'].includes(body.action)) return {success: false};
+
+  const {repository, pull_request} = body;
   const {ref, sha} = pull_request.head;
 
   return {
@@ -83,6 +108,16 @@ function github(data) {
       });
     }
   };
+}
+
+function isGithubRequestCrypographicallySafe({headers, body, secret}) {
+  const blob = JSON.stringify(body);
+  const hmac = crypto.createHmac('sha1', secret);
+  const ourSignature = `sha1=${hmac.update(blob).digest('hex')}`;
+  const theirSignature = headers['x-hub-signature'];
+  const bufferA = Buffer.from(ourSignature, 'utf8');
+  const bufferB = Buffer.from(theirSignature, 'utf8');
+  return crypto.timingSafeEqual(bufferA, bufferB);
 }
 
 module.exports = {

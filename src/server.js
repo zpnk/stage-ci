@@ -17,8 +17,17 @@ server.get('/', (request, response) => {
 });
 
 server.post('/', (request, response) => {
-  const {success, ref, sha, name, alias, cloneUrl, setStatus} = github(request.body);
-
+  let result;
+  try {
+    const {headers, body} = request;
+    result = github({headers, body});
+  } catch (error) {
+    if (error.asJson && error.asJson.error && error.asJson.error.type === 'fatal') {
+      response.status(500).send(error.asJson);
+      return;
+    }
+  }
+  const {success, ref, sha, name, alias, cloneUrl, setStatus} = result;
   response.sendStatus((success) ? 200 : 204);
   if (!success) return;
 
