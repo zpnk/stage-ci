@@ -93,7 +93,7 @@ function github({headers, body}) {
     sha,
     success: true,
     name: repository.full_name,
-    alias: `https://${repository.name.replace(/[^A-Z0-9]/ig, '-')}-${ref}.now.sh`,
+    alias: `https://${repository.name.replace(/[^A-Z0-9]/ig, '-')}-${encodeURIComponent(ref)}.now.sh`,
     cloneUrl: url.format(Object.assign(
       url.parse(repository.clone_url),
       {auth: process.env.GITHUB_TOKEN}
