@@ -57,14 +57,14 @@ $ ngrok http 3000
 ```
 
 Setup a [test repo](https://github.com/zpnk/hello-world) on GitHub and configure
-a webhook using the ngrok url. Give it access to the "Pull request" event. You
-also must set a secret. Use this value as your GITHUB_WEBHOOK_SECRET. It should
-be long and you should not share it with anyone.
+a webhook using the ngrok url. Choose "Let me select individual events" and choose
+the "Pull request" event.  You also must generate a secret; it should be long 
+and you should not share it with anyone. Use this value here as the webhook Secret.
 
 Now use the same value to set your secret environment variable:
 
 ```bash
-$ export GITHUB_WEBHOOK_SECRET=REPLACEME_REPLACEME_REPLACEME_REPLACEME_REPLACEME_REPLACEME_REPLACEME
+$ export GITHUB_WEBHOOK_SECRET=REPLACEME_123123
 ```
 
 Open a PR on your repo to trigger the webhook. It will also fire on commits
