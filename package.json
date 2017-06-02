@@ -4,7 +4,7 @@
   "main": "server.js",
   "license": "MIT",
   "scripts": {
-    "start": "node --harmony-async-await ./src/server.js",
+    "start": "node ./src/server.js",
     "test": "xo && ava",
     "precommit": "npm test -s"
   },
