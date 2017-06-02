@@ -3,6 +3,9 @@
   "version": "1.1.0",
   "main": "server.js",
   "license": "MIT",
+  "engines": {
+    "node": "8.0.x"
+  },
   "scripts": {
     "start": "node ./src/server.js",
     "test": "xo && ava",
