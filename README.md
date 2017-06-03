@@ -14,11 +14,17 @@ Install project dependencies:
 $ yarn
 ```
 
-Generate a [GitHub token](https://github.com/settings/tokens) with the *repo*
+If using GitHub, generate a [GitHub token](https://github.com/settings/tokens) with the *repo*
 scope. Set this token in an environment variable:
 
 ```bash
 $ export GITHUB_TOKEN=123
+```
+
+If using GitLab, generate a [GitLab token](https://gitlab.com/profile/personal_access_tokens) with the *api* scope. Set this token in an environment variable:
+
+```bash
+$ export GITLAB_TOKEN=123
 ```
 
 Generate a [Zeit API token](https://zeit.co/account#api-tokens) and set it in an
