@@ -88,6 +88,8 @@ function github({headers, body}) {
   const {repository, pull_request} = body;
   const {ref, sha} = pull_request.head;
   const aliasID = `${repository.name.replace(/[^A-Z0-9]/gi, '-')}-pr${pull_request.number}`;
+  const {deployments_url} = pull_request.head.repo;
+  let deploymentId;
 
   return {
     ref,
@@ -99,13 +101,20 @@ function github({headers, body}) {
       url.parse(repository.clone_url),
       {auth: process.env.GITHUB_TOKEN}
     )),
+    deploy: async () => {
+      const result = await githubApi.post(deployments_url, {
+        ref,
+        auto_merge: false,
+        environment: 'staging'
+      });
+      deploymentId = result.data.id;
+    },
     setStatus: (state, description, targetUrl) => {
       log.info(`> Setting GitHub status to "${state}"...`);
-      return githubApi.post(pull_request.statuses_url, {
+      return githubApi.post(`${deployments_url}/${deploymentId}/statuses`, {
         state,
         description,
-        target_url: targetUrl,
-        context: 'ci/stage-ci'
+        target_url: targetUrl
       });
     }
   };
