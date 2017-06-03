@@ -20,7 +20,8 @@ const now = (cmd='') => {
 
 const githubApi = axios.create({
   headers: {
-    'Authorization': `token ${process.env.GITHUB_TOKEN}`
+    Authorization: `token ${process.env.GITHUB_TOKEN}`,
+    Accept: 'application/vnd.github.ant-man-preview+json'
   }
 });
 
@@ -114,6 +115,7 @@ function github({headers, body}) {
       return githubApi.post(`${deployments_url}/${deploymentId}/statuses`, {
         state,
         description,
+        environment_url: targetUrl,
         target_url: targetUrl
       });
     }
