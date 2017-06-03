@@ -3,7 +3,7 @@ const bodyParser = require('body-parser');
 const server = require('express')();
 const Queue = require('promise-queue');
 const {version} = require('../package.json');
-const {stage, sync, github} = require('./core');
+const {stage, sync, github, gitlab} = require('./core');
 const log = require('./logger');
 
 const PORT = process.env.PORT || 3000;
@@ -20,7 +20,9 @@ server.post('/', (request, response) => {
   let result;
   try {
     const {headers, body} = request;
-    result = github({headers, body});
+    const keys = Object.keys(headers);
+    if (keys.includes('x-github-event')) result = github({headers, body});
+    if (keys.includes('x-gitlab-event')) result = gitlab({headers, body});
   } catch (error) {
     if (error.asJson && error.asJson.error && error.asJson.error.type === 'fatal') {
       response.status(500).send(error.asJson);

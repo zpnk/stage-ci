@@ -9,20 +9,18 @@ const axios = require('axios');
 const log = require('./logger');
 const envs = require('./envs');
 
-if (!process.env.GITHUB_TOKEN) throw new Error('GITHUB_TOKEN must be defined in environment. Create one at https://github.com/settings/tokens');
-if (!process.env.GITHUB_WEBHOOK_SECRET) throw new Error('GITHUB_WEBHOOK_SECRET must be defined in environment. Create one at https://github.com/{OWNERNAME}/{REPONAME}/settings/hooks (swap in the path to your repo)');
+const env = process.env;
+
+const INVALID_URI_CHARACTERS = /\//g;
+
+if (!((env.GITHUB_TOKEN && !env.GITLAB_TOKEN) || (!env.GITHUB_TOKEN && env.GITLAB_TOKEN))) throw new Error('One of GITHUB_TOKEN or GITLAB_TOKEN must be defined in environment. Create one at https://github.com/settings/tokens or https://gitlab.com/profile/personal_access_tokens');
+if (!((env.GITHUB_WEBHOOK_SECRET && !env.GITLAB_WEBHOOK_SECRET) || (!env.GITHUB_WEBHOOK_SECRET && env.GITLAB_WEBHOOK_SECRET))) throw new Error('One of GITHUB_WEBHOOK_SECRET or GITLAB_WEBHOOK_SECRET must be defined in environment. Create one at https://github.com/{OWNERNAME}/{REPONAME}/settings/hooks or https://gitlab.com/{OWNERNAME}/{REPONAME}/settings/integration (swap in the path to your repo)');
 if (!process.env.ZEIT_API_TOKEN) throw new Error('ZEIT_API_TOKEN must be defined in environment. Create one at https://zeit.co/account/tokens');
 
 const now = (cmd='') => {
   const nowBin = path.resolve('./node_modules/now/build/bin/now');
   return `${nowBin} ${cmd} --token ${process.env.ZEIT_API_TOKEN}`;
 };
-
-const githubApi = axios.create({
-  headers: {
-    'Authorization': `token ${process.env.GITHUB_TOKEN}`
-  }
-});
 
 function stage(cwd, {alias}) {
   return new Promise((resolve, reject) => {
@@ -87,7 +85,12 @@ function github({headers, body}) {
 
   const {repository, pull_request} = body;
   const {ref, sha} = pull_request.head;
-  const INVALID_URI_CHARACTERS = /\//g;
+
+  const githubApi = axios.create({
+    headers: {
+      'Authorization': `token ${process.env.GITHUB_TOKEN}`
+    }
+  });
 
   return {
     ref,
@@ -111,6 +114,53 @@ function github({headers, body}) {
   };
 }
 
+function gitlab({headers, body} = {}) {
+  if (!isGitLabRequestSafe({headers}))
+    throw new UnsafeWebhookPayloadError({
+      provider: {
+        name: 'Gitlab',
+        environmentVariable: 'GITLAB_WEBHOOK_SECRET',
+        webhookLocationInstructions: 'at https://gitlab.com/{OWNERNAME}/{REPONAME}/settings/integrations (swap in the path to your repo)'
+      }
+    });
+
+  if (body.object_kind !== 'merge_request') return {success: false};
+  if (!['opened', 'reopened'].includes(body.object_attributes.state)) return {success: false};
+
+  const {object_attributes: {source, source_branch, last_commit: {id}, target, target_project_id}} = body;
+
+  let {web_url} = source;
+  web_url = url.parse(web_url);
+  const statuses_url = `${web_url.protocol}//${web_url.hostname}/api/v4/projects/${target_project_id}/statuses/${id}`;
+
+  const gitlabApi = axios.create({
+    headers: {
+      'PRIVATE-TOKEN': env.GITLAB_TOKEN
+    }
+  });
+
+  return {
+    ref: source_branch,
+    sha: id,
+    success: true,
+    name: target.path_with_namespace,
+    alias: `https://${source.name.replace(/[^A-Z0-9]/ig, '-')}-${source_branch.replace(INVALID_URI_CHARACTERS, '-')}.now.sh`,
+    cloneUrl: url.format(Object.assign(
+      url.parse(source.http_url),
+      {auth: `gitlab-ci-token:${env.GITLAB_TOKEN}`}
+    )),
+    setStatus: (state, description, targetUrl) => {
+      log.info(`> Setting GitLab status to "${state}"...`);
+      return gitlabApi.post(statuses_url, {
+        state,
+        description,
+        target_url: targetUrl,
+        context: 'ci/stage-ci'
+      });
+    }
+  };
+}
+
 function isGithubRequestCrypographicallySafe({headers, body, secret}) {
   const blob = JSON.stringify(body);
   const hmac = crypto.createHmac('sha1', secret);
@@ -121,8 +171,13 @@ function isGithubRequestCrypographicallySafe({headers, body, secret}) {
   return crypto.timingSafeEqual(bufferA, bufferB);
 }
 
+function isGitLabRequestSafe({headers}) {
+  return headers['x-gitlab-token'] === env.GITLAB_WEBHOOK_SECRET;
+}
+
 module.exports = {
   stage,
   sync,
-  github
+  github,
+  gitlab
 };
