@@ -13,8 +13,8 @@ const env = process.env;
 
 const INVALID_URI_CHARACTERS = /\//g;
 
-if (!((env.GITHUB_TOKEN && !env.GITLAB_TOKEN) || (!env.GITHUB_TOKEN && env.GITLAB_TOKEN))) throw new Error('One of GITHUB_TOKEN or GITLAB_TOKEN must be defined in environment. Create one at https://github.com/settings/tokens or https://gitlab.com/profile/personal_access_tokens');
-if (!((env.GITHUB_WEBHOOK_SECRET && !env.GITLAB_WEBHOOK_SECRET) || (!env.GITHUB_WEBHOOK_SECRET && env.GITLAB_WEBHOOK_SECRET))) throw new Error('One of GITHUB_WEBHOOK_SECRET or GITLAB_WEBHOOK_SECRET must be defined in environment. Create one at https://github.com/{OWNERNAME}/{REPONAME}/settings/hooks or https://gitlab.com/{OWNERNAME}/{REPONAME}/settings/integration (swap in the path to your repo)');
+if (!env.GITHUB_TOKEN && !env.GITLAB_TOKEN) throw new Error('GITHUB_TOKEN and/or GITLAB_TOKEN must be defined in environment. Create one at https://github.com/settings/tokens or https://gitlab.com/profile/personal_access_tokens');
+if (!env.GITHUB_WEBHOOK_SECRET && !env.GITLAB_WEBHOOK_SECRET) throw new Error('GITHUB_WEBHOOK_SECRET and/or GITLAB_WEBHOOK_SECRET must be defined in environment. Create one at https://github.com/{OWNERNAME}/{REPONAME}/settings/hooks or https://gitlab.com/{OWNERNAME}/{REPONAME}/settings/integration (swap in the path to your repo)');
 if (!env.ZEIT_API_TOKEN) throw new Error('ZEIT_API_TOKEN must be defined in environment. Create one at https://zeit.co/account/tokens');
 
 const now = (cmd='') => {
