@@ -15,11 +15,11 @@ const INVALID_URI_CHARACTERS = /\//g;
 
 if (!((env.GITHUB_TOKEN && !env.GITLAB_TOKEN) || (!env.GITHUB_TOKEN && env.GITLAB_TOKEN))) throw new Error('One of GITHUB_TOKEN or GITLAB_TOKEN must be defined in environment. Create one at https://github.com/settings/tokens or https://gitlab.com/profile/personal_access_tokens');
 if (!((env.GITHUB_WEBHOOK_SECRET && !env.GITLAB_WEBHOOK_SECRET) || (!env.GITHUB_WEBHOOK_SECRET && env.GITLAB_WEBHOOK_SECRET))) throw new Error('One of GITHUB_WEBHOOK_SECRET or GITLAB_WEBHOOK_SECRET must be defined in environment. Create one at https://github.com/{OWNERNAME}/{REPONAME}/settings/hooks or https://gitlab.com/{OWNERNAME}/{REPONAME}/settings/integration (swap in the path to your repo)');
-if (!process.env.ZEIT_API_TOKEN) throw new Error('ZEIT_API_TOKEN must be defined in environment. Create one at https://zeit.co/account/tokens');
+if (!env.ZEIT_API_TOKEN) throw new Error('ZEIT_API_TOKEN must be defined in environment. Create one at https://zeit.co/account/tokens');
 
 const now = (cmd='') => {
   const nowBin = path.resolve('./node_modules/now/build/bin/now');
-  return `${nowBin} ${cmd} --token ${process.env.ZEIT_API_TOKEN}`;
+  return `${nowBin} ${cmd} --token ${env.ZEIT_API_TOKEN}`;
 };
 
 function stage(cwd, {alias}) {
@@ -72,7 +72,7 @@ function UnsafeWebhookPayloadError(language) {
 
 function github({headers, body}) {
   // Don't log but give a very specific error. We don't want to fill the logs.
-  if (!isGithubRequestCrypographicallySafe({headers, body, secret: process.env.GITHUB_WEBHOOK_SECRET}))
+  if (!isGithubRequestCrypographicallySafe({headers, body, secret: env.GITHUB_WEBHOOK_SECRET}))
     throw new UnsafeWebhookPayloadError({
       provider: {
         name: 'Github',
@@ -88,7 +88,7 @@ function github({headers, body}) {
 
   const githubApi = axios.create({
     headers: {
-      'Authorization': `token ${process.env.GITHUB_TOKEN}`
+      'Authorization': `token ${env.GITHUB_TOKEN}`
     }
   });
 
@@ -100,7 +100,7 @@ function github({headers, body}) {
     alias: `https://${repository.name.replace(/[^A-Z0-9]/ig, '-')}-${ref.replace(INVALID_URI_CHARACTERS, '-')}.now.sh`,
     cloneUrl: url.format(Object.assign(
       url.parse(repository.clone_url),
-      {auth: process.env.GITHUB_TOKEN}
+      {auth: env.GITHUB_TOKEN}
     )),
     setStatus: (state, description, targetUrl) => {
       log.info(`> Setting GitHub status to "${state}"...`);
