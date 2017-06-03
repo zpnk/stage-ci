@@ -104,10 +104,12 @@ function github({headers, body}) {
     )),
     deploy: async () => {
       // https://developer.github.com/v3/repos/deployments/#create-a-deployment-status
+      // https://developer.github.com/changes/2016-04-06-deployment-and-deployment-status-enhancements/
       const result = await githubApi.post(deployments_url, {
         ref,
         auto_merge: false,
         required_contexts: [],
+        transient_environment: true,
         environment: 'PR staging'
       });
       deploymentId = result.data.id;
@@ -118,7 +120,8 @@ function github({headers, body}) {
         state,
         description,
         environment_url: targetUrl,
-        target_url: targetUrl
+        target_url: targetUrl,
+        auto_inactive: false
       });
     }
   };
