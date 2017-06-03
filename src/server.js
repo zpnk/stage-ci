@@ -43,6 +43,11 @@ server.post('/', (request, response) => {
       await setStatus('success', 'Deployed to Now', alias);
     } catch (error) {
       log.error(error.stack);
+      if (error.response) {
+        log.error(error.response.data.message);
+        log.error(error.response.data.errors);
+        log.error(error.response.data.documentation_url);
+      }
       await setStatus('error', 'Error', alias);
     }
 
