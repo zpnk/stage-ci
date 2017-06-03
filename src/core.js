@@ -103,10 +103,12 @@ function github({headers, body}) {
       {auth: process.env.GITHUB_TOKEN}
     )),
     deploy: async () => {
+      // https://developer.github.com/v3/repos/deployments/#create-a-deployment-status
       const result = await githubApi.post(deployments_url, {
         ref,
         auto_merge: false,
-        environment: 'staging'
+        required_contexts: [],
+        environment: 'PR staging'
       });
       deploymentId = result.data.id;
     },
