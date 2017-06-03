@@ -45,7 +45,7 @@ $ export ENVS='{"REDIS_HOST": "my.cache.aws.com", "REDIS_PORT": 1234}'
 Now start the server:
 
 ```bash
-$ npm start
+$ yarn dev
 ```
 ### Testing GitHub integration
 
