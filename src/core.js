@@ -88,8 +88,8 @@ function github({headers, body}) {
 
   const {repository, pull_request} = body;
   const {ref, sha} = pull_request.head;
+  const {deployments_url} = repository;
   const aliasID = `${repository.name.replace(/[^A-Z0-9]/gi, '-')}-pr${pull_request.number}`;
-  const {deployments_url} = pull_request.head.repo;
   let deploymentId;
 
   return {
@@ -99,14 +99,14 @@ function github({headers, body}) {
     name: repository.full_name,
     alias: `https://${aliasID}.now.sh`,
     cloneUrl: url.format(Object.assign(
-      url.parse(repository.clone_url),
+      url.parse(pull_request.head.repo.clone_url),
       {auth: process.env.GITHUB_TOKEN}
     )),
     deploy: async () => {
       // https://developer.github.com/v3/repos/deployments/#create-a-deployment-status
       // https://developer.github.com/changes/2016-04-06-deployment-and-deployment-status-enhancements/
       const result = await githubApi.post(deployments_url, {
-        ref,
+        ref: sha,
         auto_merge: false,
         required_contexts: [],
         transient_environment: true,
