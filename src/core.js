@@ -21,7 +21,7 @@ const now = (cmd='') => {
 const githubApi = axios.create({
   headers: {
     Authorization: `token ${process.env.GITHUB_TOKEN}`,
-    Accept: 'application/vnd.github.ant-man-preview+json'
+    Accept: 'application/vnd.github.ant-man-preview+json, application/json'
   }
 });
 
