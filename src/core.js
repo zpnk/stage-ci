@@ -9,17 +9,23 @@ const axios = require('axios');
 const log = require('./logger');
 const envs = require('./envs');
 
-const env = process.env;
+const {
+  GITHUB_TOKEN,
+  GITHUB_WEBHOOK_SECRET,
+  GITLAB_TOKEN,
+  GITLAB_WEBHOOK_SECRET,
+  ZEIT_API_TOKEN
+} = process.env;
 
 const INVALID_URI_CHARACTERS = /\//g;
 
-if (!env.GITHUB_TOKEN && !env.GITLAB_TOKEN) throw new Error('GITHUB_TOKEN and/or GITLAB_TOKEN must be defined in environment. Create one at https://github.com/settings/tokens or https://gitlab.com/profile/personal_access_tokens');
-if (!env.GITHUB_WEBHOOK_SECRET && !env.GITLAB_WEBHOOK_SECRET) throw new Error('GITHUB_WEBHOOK_SECRET and/or GITLAB_WEBHOOK_SECRET must be defined in environment. Create one at https://github.com/{OWNERNAME}/{REPONAME}/settings/hooks or https://gitlab.com/{OWNERNAME}/{REPONAME}/settings/integration (swap in the path to your repo)');
-if (!env.ZEIT_API_TOKEN) throw new Error('ZEIT_API_TOKEN must be defined in environment. Create one at https://zeit.co/account/tokens');
+if (!GITHUB_TOKEN && !GITLAB_TOKEN) throw new Error('GITHUB_TOKEN and/or GITLAB_TOKEN must be defined in environment. Create one at https://github.com/settings/tokens or https://gitlab.com/profile/personal_access_tokens');
+if (!GITHUB_WEBHOOK_SECRET && !GITLAB_WEBHOOK_SECRET) throw new Error('GITHUB_WEBHOOK_SECRET and/or GITLAB_WEBHOOK_SECRET must be defined in environment. Create one at https://github.com/{OWNERNAME}/{REPONAME}/settings/hooks or https://gitlab.com/{OWNERNAME}/{REPONAME}/settings/integration (swap in the path to your repo)');
+if (!ZEIT_API_TOKEN) throw new Error('ZEIT_API_TOKEN must be defined in environment. Create one at https://zeit.co/account/tokens');
 
 const now = (cmd='') => {
   const nowBin = path.resolve('./node_modules/now/build/bin/now');
-  return `${nowBin} ${cmd} --token ${env.ZEIT_API_TOKEN}`;
+  return `${nowBin} ${cmd} --token ${ZEIT_API_TOKEN}`;
 };
 
 function stage(cwd, {alias}) {
@@ -72,7 +78,7 @@ function UnsafeWebhookPayloadError(language) {
 
 function github({headers, body}) {
   // Don't log but give a very specific error. We don't want to fill the logs.
-  if (!isGithubRequestCrypographicallySafe({headers, body, secret: env.GITHUB_WEBHOOK_SECRET}))
+  if (!isGithubRequestCrypographicallySafe({headers, body, secret: GITHUB_WEBHOOK_SECRET}))
     throw new UnsafeWebhookPayloadError({
       provider: {
         name: 'Github',
@@ -88,7 +94,7 @@ function github({headers, body}) {
 
   const githubApi = axios.create({
     headers: {
-      'Authorization': `token ${env.GITHUB_TOKEN}`
+      'Authorization': `token ${GITHUB_TOKEN}`
     }
   });
 
@@ -100,7 +106,7 @@ function github({headers, body}) {
     alias: `https://${repository.name.replace(/[^A-Z0-9]/ig, '-')}-${ref.replace(INVALID_URI_CHARACTERS, '-')}.now.sh`,
     cloneUrl: url.format(Object.assign(
       url.parse(repository.clone_url),
-      {auth: env.GITHUB_TOKEN}
+      {auth: GITHUB_TOKEN}
     )),
     setStatus: (state, description, targetUrl) => {
       log.info(`> Setting GitHub status to "${state}"...`);
@@ -135,7 +141,7 @@ function gitlab({headers, body} = {}) {
 
   const gitlabApi = axios.create({
     headers: {
-      'PRIVATE-TOKEN': env.GITLAB_TOKEN
+      'PRIVATE-TOKEN': GITLAB_TOKEN
     }
   });
 
@@ -147,7 +153,7 @@ function gitlab({headers, body} = {}) {
     alias: `https://${source.name.replace(/[^A-Z0-9]/ig, '-')}-${source_branch.replace(INVALID_URI_CHARACTERS, '-')}.now.sh`,
     cloneUrl: url.format(Object.assign(
       url.parse(source.http_url),
-      {auth: `gitlab-ci-token:${env.GITLAB_TOKEN}`}
+      {auth: `gitlab-ci-token:${GITLAB_TOKEN}`}
     )),
     setStatus: (state, description, targetUrl) => {
       log.info(`> Setting GitLab status to "${state}"...`);
@@ -172,7 +178,7 @@ function isGithubRequestCrypographicallySafe({headers, body, secret}) {
 }
 
 function isGitLabRequestSafe({headers}) {
-  return headers['x-gitlab-token'] === env.GITLAB_WEBHOOK_SECRET;
+  return headers['x-gitlab-token'] === GITLAB_WEBHOOK_SECRET;
 }
 
 module.exports = {
