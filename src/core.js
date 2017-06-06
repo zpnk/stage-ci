@@ -90,10 +90,13 @@ function github({headers, body}) {
 
   const {repository, pull_request} = body;
   const {ref, sha} = pull_request.head;
+  const {deployments_url} = repository;
+  let deploymentId;
 
   const githubApi = axios.create({
     headers: {
-      'Authorization': `token ${GITHUB_TOKEN}`
+      Authorization: `token ${GITHUB_TOKEN}`,
+      Accept: 'application/vnd.github.ant-man-preview+json, application/json'
     }
   });
 
@@ -103,14 +106,27 @@ function github({headers, body}) {
     success: true,
     name: repository.full_name,
     alias: createAliasUrl(repository.name, ref),
-    cloneUrl: createCloneUrl(repository.clone_url, GITHUB_TOKEN),
+    cloneUrl: createCloneUrl(pull_request.head.repo.clone_url, GITHUB_TOKEN),
+    deploy: async () => {
+      // https://developer.github.com/v3/repos/deployments/#create-a-deployment-status
+      // https://developer.github.com/changes/2016-04-06-deployment-and-deployment-status-enhancements/
+      const result = await githubApi.post(deployments_url, {
+        ref: sha,
+        auto_merge: false,
+        required_contexts: [],
+        transient_environment: true,
+        environment: 'PR staging'
+      });
+      deploymentId = result.data.id;
+    },
     setStatus: (state, description, targetUrl) => {
       log.info(`> Setting GitHub status to "${state}"...`);
-      return githubApi.post(pull_request.statuses_url, {
+      return githubApi.post(`${deployments_url}/${deploymentId}/statuses`, {
         state,
         description,
+        environment_url: targetUrl,
         target_url: targetUrl,
-        context: 'ci/stage-ci'
+        auto_inactive: false
       });
     }
   };
