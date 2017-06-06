@@ -1,29 +1,31 @@
 /* eslint-disable camelcase */
 const {exec} = require('child_process');
 const path = require('path');
-const url = require('url');
+const {parse} = require('url');
 const crypto = require('crypto');
 const {fs} = require('mz');
 const git = require('simple-git/promise')();
 const axios = require('axios');
 const log = require('./logger');
 const envs = require('./envs');
+const {createAliasUrl, createCloneUrl} = require('./helpers');
 
-if (!process.env.GITHUB_TOKEN) throw new Error('GITHUB_TOKEN must be defined in environment. Create one at https://github.com/settings/tokens');
-if (!process.env.GITHUB_WEBHOOK_SECRET) throw new Error('GITHUB_WEBHOOK_SECRET must be defined in environment. Create one at https://github.com/{OWNERNAME}/{REPONAME}/settings/hooks (swap in the path to your repo)');
-if (!process.env.ZEIT_API_TOKEN) throw new Error('ZEIT_API_TOKEN must be defined in environment. Create one at https://zeit.co/account/tokens');
+const {
+  GITHUB_TOKEN,
+  GITHUB_WEBHOOK_SECRET,
+  GITLAB_TOKEN,
+  GITLAB_WEBHOOK_SECRET,
+  ZEIT_API_TOKEN
+} = process.env;
+
+if (!GITHUB_TOKEN && !GITLAB_TOKEN) throw new Error('GITHUB_TOKEN and/or GITLAB_TOKEN must be defined in environment. Create one at https://github.com/settings/tokens or https://gitlab.com/profile/personal_access_tokens');
+if (!GITHUB_WEBHOOK_SECRET && !GITLAB_WEBHOOK_SECRET) throw new Error('GITHUB_WEBHOOK_SECRET and/or GITLAB_WEBHOOK_SECRET must be defined in environment. Create one at https://github.com/{OWNERNAME}/{REPONAME}/settings/hooks or https://gitlab.com/{OWNERNAME}/{REPONAME}/settings/integration (swap in the path to your repo)');
+if (!ZEIT_API_TOKEN) throw new Error('ZEIT_API_TOKEN must be defined in environment. Create one at https://zeit.co/account/tokens');
 
 const now = (cmd='') => {
   const nowBin = path.resolve('./node_modules/now/build/bin/now');
-  return `${nowBin} ${cmd} --token ${process.env.ZEIT_API_TOKEN}`;
+  return `${nowBin} ${cmd} --token ${ZEIT_API_TOKEN}`;
 };
-
-const githubApi = axios.create({
-  headers: {
-    Authorization: `token ${process.env.GITHUB_TOKEN}`,
-    Accept: 'application/vnd.github.ant-man-preview+json, application/json'
-  }
-});
 
 function stage(cwd, {alias}) {
   return new Promise((resolve, reject) => {
@@ -75,7 +77,7 @@ function UnsafeWebhookPayloadError(language) {
 
 function github({headers, body}) {
   // Don't log but give a very specific error. We don't want to fill the logs.
-  if (!isGithubRequestCrypographicallySafe({headers, body, secret: process.env.GITHUB_WEBHOOK_SECRET}))
+  if (!isGithubRequestCrypographicallySafe({headers, body, secret: GITHUB_WEBHOOK_SECRET}))
     throw new UnsafeWebhookPayloadError({
       provider: {
         name: 'Github',
@@ -89,20 +91,22 @@ function github({headers, body}) {
   const {repository, pull_request} = body;
   const {ref, sha} = pull_request.head;
   const {deployments_url} = repository;
-  const INVALID_URI_CHARACTERS = /\//g;
-  const aliasID = `${repository.name.replace(/[^A-Z0-9]/gi, '-')}-${ref.replace(INVALID_URI_CHARACTERS, '-')}`;
   let deploymentId;
+
+  const githubApi = axios.create({
+    headers: {
+      Authorization: `token ${GITHUB_TOKEN}`,
+      Accept: 'application/vnd.github.ant-man-preview+json, application/json'
+    }
+  });
 
   return {
     ref,
     sha,
     success: true,
     name: repository.full_name,
-    alias: `https://${aliasID}.now.sh`,
-    cloneUrl: url.format(Object.assign(
-      url.parse(pull_request.head.repo.clone_url),
-      {auth: process.env.GITHUB_TOKEN}
-    )),
+    alias: createAliasUrl(repository.name, ref),
+    cloneUrl: createCloneUrl(pull_request.head.repo.clone_url, GITHUB_TOKEN),
     deploy: async () => {
       // https://developer.github.com/v3/repos/deployments/#create-a-deployment-status
       // https://developer.github.com/changes/2016-04-06-deployment-and-deployment-status-enhancements/
@@ -128,6 +132,50 @@ function github({headers, body}) {
   };
 }
 
+function gitlab({headers, body} = {}) {
+  if (!isGitLabRequestSafe({headers}))
+    throw new UnsafeWebhookPayloadError({
+      provider: {
+        name: 'Gitlab',
+        environmentVariable: 'GITLAB_WEBHOOK_SECRET',
+        webhookLocationInstructions: 'at https://gitlab.com/{OWNERNAME}/{REPONAME}/settings/integrations (swap in the path to your repo)'
+      }
+    });
+
+  if (body.object_kind !== 'merge_request') return {success: false};
+  if (!['opened', 'reopened'].includes(body.object_attributes.state)) return {success: false};
+
+  const {object_attributes: {source, source_branch, last_commit: {id}, target, target_project_id}} = body;
+
+  let {web_url} = source;
+  web_url = parse(web_url);
+  const statuses_url = `${web_url.protocol}//${web_url.hostname}/api/v4/projects/${target_project_id}/statuses/${id}`;
+
+  const gitlabApi = axios.create({
+    headers: {
+      'PRIVATE-TOKEN': GITLAB_TOKEN
+    }
+  });
+
+  return {
+    ref: source_branch,
+    sha: id,
+    success: true,
+    name: target.path_with_namespace,
+    alias: createAliasUrl(source.name, source_branch),
+    cloneUrl: createCloneUrl(source.http_url, `gitlab-ci-token:${GITLAB_TOKEN}`),
+    setStatus: (state, description, targetUrl) => {
+      log.info(`> Setting GitLab status to "${state}"...`);
+      return gitlabApi.post(statuses_url, {
+        state,
+        description,
+        target_url: targetUrl,
+        context: 'ci/stage-ci'
+      });
+    }
+  };
+}
+
 function isGithubRequestCrypographicallySafe({headers, body, secret}) {
   const blob = JSON.stringify(body);
   const hmac = crypto.createHmac('sha1', secret);
@@ -138,8 +186,13 @@ function isGithubRequestCrypographicallySafe({headers, body, secret}) {
   return crypto.timingSafeEqual(bufferA, bufferB);
 }
 
+function isGitLabRequestSafe({headers}) {
+  return headers['x-gitlab-token'] === GITLAB_WEBHOOK_SECRET;
+}
+
 module.exports = {
   stage,
   sync,
-  github
+  github,
+  gitlab
 };
