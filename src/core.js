@@ -89,7 +89,8 @@ function github({headers, body}) {
   const {repository, pull_request} = body;
   const {ref, sha} = pull_request.head;
   const {deployments_url} = repository;
-  const aliasID = `${repository.name.replace(/[^A-Z0-9]/gi, '-')}-pr${pull_request.number}`;
+  const INVALID_URI_CHARACTERS = /\//g;
+  const aliasID = `${repository.name.replace(/[^A-Z0-9]/gi, '-')}-${ref.replace(INVALID_URI_CHARACTERS, '-')}`;
   let deploymentId;
 
   return {
