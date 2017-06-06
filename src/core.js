@@ -8,6 +8,7 @@ const git = require('simple-git/promise')();
 const axios = require('axios');
 const log = require('./logger');
 const envs = require('./envs');
+const {createAliasUrl} = require('./helpers');
 
 const {
   GITHUB_TOKEN,
@@ -16,8 +17,6 @@ const {
   GITLAB_WEBHOOK_SECRET,
   ZEIT_API_TOKEN
 } = process.env;
-
-const INVALID_URI_CHARACTERS = /\//g;
 
 if (!GITHUB_TOKEN && !GITLAB_TOKEN) throw new Error('GITHUB_TOKEN and/or GITLAB_TOKEN must be defined in environment. Create one at https://github.com/settings/tokens or https://gitlab.com/profile/personal_access_tokens');
 if (!GITHUB_WEBHOOK_SECRET && !GITLAB_WEBHOOK_SECRET) throw new Error('GITHUB_WEBHOOK_SECRET and/or GITLAB_WEBHOOK_SECRET must be defined in environment. Create one at https://github.com/{OWNERNAME}/{REPONAME}/settings/hooks or https://gitlab.com/{OWNERNAME}/{REPONAME}/settings/integration (swap in the path to your repo)');
@@ -103,7 +102,7 @@ function github({headers, body}) {
     sha,
     success: true,
     name: repository.full_name,
-    alias: `https://${repository.name.replace(/[^A-Z0-9]/ig, '-')}-${ref.replace(INVALID_URI_CHARACTERS, '-')}.now.sh`,
+    alias: createAliasUrl(repository.name, ref),
     cloneUrl: url.format(Object.assign(
       url.parse(repository.clone_url),
       {auth: GITHUB_TOKEN}
@@ -150,7 +149,7 @@ function gitlab({headers, body} = {}) {
     sha: id,
     success: true,
     name: target.path_with_namespace,
-    alias: `https://${source.name.replace(/[^A-Z0-9]/ig, '-')}-${source_branch.replace(INVALID_URI_CHARACTERS, '-')}.now.sh`,
+    alias: createAliasUrl(source.name, source_branch),
     cloneUrl: url.format(Object.assign(
       url.parse(source.http_url),
       {auth: `gitlab-ci-token:${GITLAB_TOKEN}`}
