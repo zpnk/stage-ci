@@ -1,14 +1,14 @@
 /* eslint-disable camelcase */
 const {exec} = require('child_process');
 const path = require('path');
-const url = require('url');
+const {parse} = require('url');
 const crypto = require('crypto');
 const {fs} = require('mz');
 const git = require('simple-git/promise')();
 const axios = require('axios');
 const log = require('./logger');
 const envs = require('./envs');
-const {createAliasUrl} = require('./helpers');
+const {createAliasUrl, createCloneUrl} = require('./helpers');
 
 const {
   GITHUB_TOKEN,
@@ -103,10 +103,7 @@ function github({headers, body}) {
     success: true,
     name: repository.full_name,
     alias: createAliasUrl(repository.name, ref),
-    cloneUrl: url.format(Object.assign(
-      url.parse(repository.clone_url),
-      {auth: GITHUB_TOKEN}
-    )),
+    cloneUrl: createCloneUrl(repository.clone_url, GITHUB_TOKEN),
     setStatus: (state, description, targetUrl) => {
       log.info(`> Setting GitHub status to "${state}"...`);
       return githubApi.post(pull_request.statuses_url, {
@@ -135,7 +132,7 @@ function gitlab({headers, body} = {}) {
   const {object_attributes: {source, source_branch, last_commit: {id}, target, target_project_id}} = body;
 
   let {web_url} = source;
-  web_url = url.parse(web_url);
+  web_url = parse(web_url);
   const statuses_url = `${web_url.protocol}//${web_url.hostname}/api/v4/projects/${target_project_id}/statuses/${id}`;
 
   const gitlabApi = axios.create({
@@ -150,10 +147,7 @@ function gitlab({headers, body} = {}) {
     success: true,
     name: target.path_with_namespace,
     alias: createAliasUrl(source.name, source_branch),
-    cloneUrl: url.format(Object.assign(
-      url.parse(source.http_url),
-      {auth: `gitlab-ci-token:${GITLAB_TOKEN}`}
-    )),
+    cloneUrl: createCloneUrl(source.http_url, `gitlab-ci-token:${GITLAB_TOKEN}`),
     setStatus: (state, description, targetUrl) => {
       log.info(`> Setting GitLab status to "${state}"...`);
       return gitlabApi.post(statuses_url, {
