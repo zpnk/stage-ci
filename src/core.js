@@ -165,6 +165,8 @@ function gitlab({headers, body} = {}) {
     alias: createAliasUrl(source.name, source_branch),
     cloneUrl: createCloneUrl(source.http_url, `gitlab-ci-token:${GITLAB_TOKEN}`),
     setStatus: (state, description, targetUrl) => {
+      if (state === 'error')
+        state = 'failed';
       log.info(`> Setting GitLab status to "${state}"...`);
       return gitlabApi.post(statuses_url, {
         state,
@@ -172,7 +174,8 @@ function gitlab({headers, body} = {}) {
         target_url: targetUrl,
         context: 'ci/stage-ci'
       });
-    }
+    },
+    deploy: () => {}
   };
 }
 
