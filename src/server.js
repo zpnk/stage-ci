@@ -3,7 +3,7 @@ const bodyParser = require('body-parser');
 const server = require('express')();
 const Queue = require('promise-queue');
 const {version} = require('../package.json');
-const {setup, stage, sync, github, gitlab} = require('./core');
+const {stage, sync, github, gitlab} = require('./core');
 const log = require('./logger');
 
 const PORT = process.env.PORT || 3000;
@@ -57,10 +57,6 @@ server.post('/', (request, response) => {
   });
 });
 
-setup().then(() => {
-  server.listen(PORT, () => {
-    log.info(`Server listening on ${PORT}... `);
-  });
-}).catch((error) => {
-  log.error(error);
+server.listen(PORT, () => {
+  log.info(`Server listening on ${PORT}... `);
 });
