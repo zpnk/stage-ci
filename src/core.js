@@ -1,5 +1,6 @@
 /* eslint-disable camelcase */
 const {exec} = require('child_process');
+const os = require('os');
 const path = require('path');
 const {parse} = require('url');
 const crypto = require('crypto');
@@ -18,12 +19,59 @@ const {
   ZEIT_API_TOKEN
 } = process.env;
 
+let {NOW_VERSION} = process.env;
+
 if (!GITHUB_TOKEN && !GITLAB_TOKEN) throw new Error('GITHUB_TOKEN and/or GITLAB_TOKEN must be defined in environment. Create one at https://github.com/settings/tokens or https://gitlab.com/profile/personal_access_tokens');
 if (!GITHUB_WEBHOOK_SECRET && !GITLAB_WEBHOOK_SECRET) throw new Error('GITHUB_WEBHOOK_SECRET and/or GITLAB_WEBHOOK_SECRET must be defined in environment. Create one at https://github.com/{OWNERNAME}/{REPONAME}/settings/hooks or https://gitlab.com/{OWNERNAME}/{REPONAME}/settings/integration (swap in the path to your repo)');
 if (!ZEIT_API_TOKEN) throw new Error('ZEIT_API_TOKEN must be defined in environment. Create one at https://zeit.co/account/tokens');
 
+if (!NOW_VERSION) NOW_VERSION = '8.3.9';
+
+function setup() {
+  return new Promise((resolve, reject) => {
+    log.info('> Checking for now-cli binary..');
+    if (fs.existsSync('./now-cli')) {
+      log.info('> now-cli exists, skipping download..');
+      return resolve();
+    }
+
+    log.info('> now-cli not found..');
+    log.info('> Downloading now-cli binary..');
+
+    const type = {
+      darwin: 'macos',
+      linux: 'linux',
+      win32: 'win.exe',
+      alpine: 'alpine'
+    };
+
+    const nowFile = fs.createWriteStream('./now-cli', {encoding: 'binary', flags: 'a', mode: 0o777});
+
+    nowFile.on('close', () => {
+      log.info('> Finished downloading now-cli..');
+      return resolve();
+    });
+
+    nowFile.on('error', (err) => {
+      return reject(err);
+    });
+
+    const url = `https://github.com/zeit/now-cli/releases/download/${NOW_VERSION}/now-${type[os.platform()]}`;
+
+    axios({
+      method: 'get',
+      url,
+      responseType: 'stream'
+    }).then((response) => {
+      response.data.pipe(nowFile);
+    }).catch((error) => {
+      return reject(error);
+    });
+  });
+}
+
 const now = (cmd='') => {
-  const nowBin = path.resolve('./node_modules/now/build/bin/now');
+  const nowBin = path.resolve(__dirname, '..', 'now-cli');
   return `${nowBin} ${cmd} --token ${ZEIT_API_TOKEN}`;
 };
 
@@ -194,6 +242,7 @@ function isGitLabRequestSafe({headers}) {
 }
 
 module.exports = {
+  setup,
   stage,
   sync,
   github,
