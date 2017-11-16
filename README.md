@@ -34,6 +34,13 @@ environment variable:
 $ export ZEIT_API_TOKEN=123
 ```
 
+If using a Zeit Team [Zeit Team name](https://zeit.co/teams)
+environment variable:
+
+```bash
+$ export ZEIT_TEAM=myTeam
+```
+
 To enable [Papertrail](https://papertrailapp.com/) logging, set the respective
 environment variables:
 
