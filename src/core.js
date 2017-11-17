@@ -16,8 +16,7 @@ const {
   GITHUB_WEBHOOK_SECRET,
   GITLAB_TOKEN,
   GITLAB_WEBHOOK_SECRET,
-  ZEIT_API_TOKEN,
-  ZEIT_TEAM
+  ZEIT_API_TOKEN
 } = process.env;
 
 let {NOW_VERSION} = process.env;
@@ -73,8 +72,7 @@ function setup() {
 
 const now = (cmd='') => {
   const nowBin = path.resolve(__dirname, '..', 'now-cli');
-  const teamOption = ZEIT_TEAM ? ` --team ${ZEIT_TEAM}` : '';
-  return `${nowBin} ${cmd} --token ${ZEIT_API_TOKEN}` + teamOption;
+  return `${nowBin} ${cmd} --token ${ZEIT_API_TOKEN}`;
 };
 
 function stage(cwd, {alias}) {
