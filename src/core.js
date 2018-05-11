@@ -109,7 +109,7 @@ async function sync(cloneUrl, cloneName, localDirectory, {ref, checkout}) {
   await git.addRemote(cloneName, cloneUrl).catch((error) => {}); // eslint-disable-line no-unused-vars
 
   log.info(`> Fetching ${ref}...`);
-  await git.fetch(cloneName, ref);
+  await git.fetch(cloneName || 'origin', ref);
   log.info(`> Checking out ${ref}@${checkout}...`);
   await git.checkout(checkout);
 }
