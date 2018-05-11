@@ -105,9 +105,8 @@ async function sync(cloneUrl, cloneName, localDirectory, {ref, checkout}) {
 
   await git.cwd(localDirectory);
 
-  try {
-    await git.addRemote(cloneName, cloneUrl);
-  } catch (error) {}
+  await git.removeRemote(cloneName).catch((error) => {}); // eslint-disable-line no-unused-vars
+  await git.addRemote(cloneName, cloneUrl).catch((error) => {}); // eslint-disable-line no-unused-vars
 
   log.info(`> Fetching ${ref}...`);
   await git.fetch(cloneName, ref);
