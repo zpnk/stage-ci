@@ -95,7 +95,7 @@ function stage(cwd, {alias}) {
   });
 }
 
-async function sync(cloneUrl, localDirectory, {ref, checkout}) {
+async function sync(cloneUrl, cloneName, localDirectory, {ref, checkout}) {
   try {
     await fs.stat(localDirectory);
   } catch (error) {
@@ -104,8 +104,13 @@ async function sync(cloneUrl, localDirectory, {ref, checkout}) {
   }
 
   await git.cwd(localDirectory);
+
+  try {
+    await git.addRemote(cloneName, cloneUrl);
+  } catch (error) {}
+
   log.info(`> Fetching ${ref}...`);
-  await git.fetch('origin', ref);
+  await git.fetch(cloneName, ref);
   log.info(`> Checking out ${ref}@${checkout}...`);
   await git.checkout(checkout);
 }
@@ -155,6 +160,7 @@ function github({headers, body}) {
     name: repository.full_name,
     alias: createAliasUrl(repository.name, ref),
     cloneUrl: createCloneUrl(pull_request.head.repo.clone_url, GITHUB_TOKEN),
+    cloneName: pull_request.head.repo.full_name,
     deploy: async () => {
       // https://developer.github.com/v3/repos/deployments/#create-a-deployment-status
       // https://developer.github.com/changes/2016-04-06-deployment-and-deployment-status-enhancements/
