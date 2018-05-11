@@ -104,12 +104,11 @@ async function sync(cloneUrl, cloneName, localDirectory, {ref, checkout}) {
   }
 
   await git.cwd(localDirectory);
-
-  await git.removeRemote(cloneName).catch((error) => {}); // eslint-disable-line no-unused-vars
-  await git.addRemote(cloneName, cloneUrl).catch((error) => {}); // eslint-disable-line no-unused-vars
-
-  log.info(`> Fetching ${ref}...`);
-  await git.fetch(cloneName || 'origin', ref);
+  const remoteName = cloneName || 'origin';
+  await git.removeRemote(remoteName).catch((error) => {}); // eslint-disable-line no-unused-vars
+  await git.addRemote(remoteName, cloneUrl);
+  log.info(`> Fetching ${ref} from ${remoteName}...`);
+  await git.fetch(remoteName, ref);
   log.info(`> Checking out ${ref}@${checkout}...`);
   await git.checkout(checkout);
 }
