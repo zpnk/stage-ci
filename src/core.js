@@ -216,6 +216,7 @@ function gitlab({headers, body} = {}) {
     name: target.path_with_namespace,
     alias: createAliasUrl(source.name, source_branch),
     cloneUrl: createCloneUrl(source.http_url, `gitlab-ci-token:${GITLAB_TOKEN}`),
+    cloneName: source.path_with_namespace,
     setStatus: (state, description, targetUrl) => {
       if (state === 'error')
         state = 'failed';
