@@ -85,7 +85,7 @@ function stage(cwd, {alias}) {
       if (!url) return reject(new Error('Deployment failed'));
       log.info(`> Setting ${url} to alias ${alias}`);
       const aliasProc = exec(now(`alias set ${url} ${alias}`), {cwd});
-      aliasProc.stderr.on('data', (error) => {aliasError = error;});
+      aliasProc.stderr.on('data', (error) => {aliasError = error.replace('\u001b[2K\u001b[G', '');});
       aliasProc.on('close', () => {
         if (aliasError) return reject(new Error(aliasError));
         log.info(`> Alias ready ${alias}`);
