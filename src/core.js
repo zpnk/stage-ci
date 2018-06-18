@@ -4,6 +4,7 @@ const os = require('os');
 const path = require('path');
 const {parse} = require('url');
 const crypto = require('crypto');
+const zlib = require('zlib');
 const {fs} = require('mz');
 const git = require('simple-git/promise')();
 const axios = require('axios');
@@ -45,6 +46,7 @@ function setup() {
       alpine: 'alpine'
     };
 
+    const gunzip = zlib.createGunzip();
     const nowFile = fs.createWriteStream('./now-cli', {encoding: 'binary', flags: 'a', mode: 0o777});
 
     nowFile.on('close', () => {
@@ -56,14 +58,14 @@ function setup() {
       return reject(err);
     });
 
-    const url = `https://github.com/zeit/now-cli/releases/download/${NOW_VERSION}/now-${type[os.platform()]}`;
+    const url = `https://github.com/zeit/now-cli/releases/download/${NOW_VERSION}/now-${type[os.platform()]}.gz`;
 
     axios({
       method: 'get',
       url,
       responseType: 'stream'
     }).then((response) => {
-      response.data.pipe(nowFile);
+      response.data.pipe(gunzip).pipe(nowFile);
     }).catch((error) => {
       return reject(error);
     });
