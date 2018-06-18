@@ -4,6 +4,7 @@ const os = require('os');
 const path = require('path');
 const {parse} = require('url');
 const crypto = require('crypto');
+const zlib = require('zlib');
 const {fs} = require('mz');
 const git = require('simple-git/promise')();
 const axios = require('axios');
@@ -25,7 +26,7 @@ if (!GITHUB_TOKEN && !GITLAB_TOKEN) throw new Error('GITHUB_TOKEN and/or GITLAB_
 if (!GITHUB_WEBHOOK_SECRET && !GITLAB_WEBHOOK_SECRET) throw new Error('GITHUB_WEBHOOK_SECRET and/or GITLAB_WEBHOOK_SECRET must be defined in environment. Create one at https://github.com/{OWNERNAME}/{REPONAME}/settings/hooks or https://gitlab.com/{OWNERNAME}/{REPONAME}/settings/integration (swap in the path to your repo)');
 if (!ZEIT_API_TOKEN) throw new Error('ZEIT_API_TOKEN must be defined in environment. Create one at https://zeit.co/account/tokens');
 
-if (!NOW_VERSION) NOW_VERSION = '8.3.9';
+if (!NOW_VERSION) NOW_VERSION = '11.2.1';
 
 function setup() {
   return new Promise((resolve, reject) => {
@@ -45,6 +46,7 @@ function setup() {
       alpine: 'alpine'
     };
 
+    const gunzip = zlib.createGunzip();
     const nowFile = fs.createWriteStream('./now-cli', {encoding: 'binary', flags: 'a', mode: 0o777});
 
     nowFile.on('close', () => {
@@ -56,14 +58,14 @@ function setup() {
       return reject(err);
     });
 
-    const url = `https://github.com/zeit/now-cli/releases/download/${NOW_VERSION}/now-${type[os.platform()]}`;
+    const url = `https://github.com/zeit/now-cli/releases/download/${NOW_VERSION}/now-${type[os.platform()]}.gz`;
 
     axios({
       method: 'get',
       url,
       responseType: 'stream'
     }).then((response) => {
-      response.data.pipe(nowFile);
+      response.data.pipe(gunzip).pipe(nowFile);
     }).catch((error) => {
       return reject(error);
     });
